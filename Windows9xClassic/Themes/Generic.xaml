@@ -1,0 +1,8 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="clr-namespace:Windows9xClassic">
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="/Windows9xClassic;component/Themes/Windows9xWindow.xaml" />
+    </ResourceDictionary.MergedDictionaries>
+</ResourceDictionary>

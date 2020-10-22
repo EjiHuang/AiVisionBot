@@ -1,0 +1,171 @@
+﻿<Window
+    x:Class="MainView.View.ImageRecognitionEditorView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:MainView.View"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="clr-namespace:MainView.ViewModel"
+    Title="Image Recognition Editor"
+    Width="300"
+    Height="400"
+    ResizeMode="NoResize"
+    mc:Ignorable="d">
+    <Window.Resources>
+        <DataTemplate x:Key="ItemTemplate">
+            <DockPanel HorizontalAlignment="Stretch" LastChildFill="True">
+                <Image
+                    Width="64"
+                    Height="64"
+                    DockPanel.Dock="Left"
+                    Source="{Binding Src}" />
+                <Grid HorizontalAlignment="Stretch" DockPanel.Dock="Right">
+                    <Grid.RowDefinitions>
+                        <RowDefinition />
+                        <RowDefinition />
+                        <RowDefinition />
+                    </Grid.RowDefinitions>
+                    <Grid Grid.Row="0" HorizontalAlignment="Stretch">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="25" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock
+                            Grid.Column="0"
+                            VerticalAlignment="Center"
+                            Text="Name: " />
+                        <TextBox
+                            Grid.Column="1"
+                            Margin="0,0,5,0"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Center"
+                            Text="{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                            TextChanged="TextBox_ImageName_TextChanged" />
+                        <Button
+                            Grid.Column="2"
+                            Width="22"
+                            Height="22"
+                            VerticalAlignment="Center"
+                            Command="{Binding ElementName=LV_ImageList, Path=DataContext.RemoveSelectedImageCommand}"
+                            CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=ListViewItem, Mode=FindAncestor}, Path=Content}">
+                            <StackPanel Orientation="Horizontal">
+                                <Image Margin="1" Source="{StaticResource svg_fork}" />
+                                <TextBlock
+                                    Margin="5,0"
+                                    VerticalAlignment="Center"
+                                    Text="Image" />
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+                    <StackPanel Grid.Row="1" Orientation="Horizontal">
+                        <TextBlock VerticalAlignment="Center" Text="{Binding Width, StringFormat={}Size: {0} x}" />
+                        <TextBlock VerticalAlignment="Center" Text="{Binding Height, StringFormat={} {0}}" />
+                    </StackPanel>
+                    <StackPanel Grid.Row="2" Orientation="Horizontal">
+                        <TextBlock VerticalAlignment="Center" Text="{Binding PixelFormat, StringFormat={}PixelFormat: {0}}" />
+                    </StackPanel>
+                </Grid>
+            </DockPanel>
+        </DataTemplate>
+    </Window.Resources>
+    <Window.DataContext>
+        <vm:ImageRecognitionEditorViewModel x:Name="SubVM" />
+    </Window.DataContext>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto" />
+            <RowDefinition />
+        </Grid.RowDefinitions>
+        <DockPanel
+            Grid.Row="0"
+            Background="#F0F0F0"
+            LastChildFill="True">
+            <Button
+                x:Name="Btn_Capture"
+                Height="22"
+                Margin="2,2,0,2"
+                VerticalAlignment="Center"
+                Command="{Binding CaptureCommand}">
+                <StackPanel Orientation="Horizontal">
+                    <Image Margin="0" Source="{StaticResource svg_capture}" />
+                    <TextBlock
+                        Margin="5,0"
+                        VerticalAlignment="Center"
+                        Text="Capture" />
+                </StackPanel>
+            </Button>
+            <Button
+                x:Name="Btn_Add"
+                Height="22"
+                Margin="2,2,0,2"
+                VerticalAlignment="Center"
+                Command="{Binding ImportImageCommand}">
+                <StackPanel Orientation="Horizontal">
+                    <Image Margin="0" Source="{StaticResource svg_add_image}" />
+                    <TextBlock
+                        Margin="5,0"
+                        VerticalAlignment="Center"
+                        Text="Image" />
+                </StackPanel>
+            </Button>
+            <ToggleButton
+                x:Name="Btn_CaptureSwitch"
+                Height="22"
+                Margin="2,2,2,2"
+                HorizontalContentAlignment="Left"
+                Command="{Binding StartCaptureCommand}"
+                CommandParameter="{Binding RelativeSource={RelativeSource Mode=Self}}"
+                DockPanel.Dock="Right"
+                FontWeight="Bold">
+                <ToggleButton.Style>
+                    <Style BasedOn="{StaticResource {x:Type ToggleButton}}" TargetType="ToggleButton">
+                        <Setter Property="Content">
+                            <Setter.Value>
+                                <StackPanel Orientation="Horizontal">
+                                    <Image
+                                        Margin="1"
+                                        HorizontalAlignment="Left"
+                                        Source="{StaticResource svg_play}" />
+                                    <TextBlock
+                                        Margin="5,0"
+                                        VerticalAlignment="Center"
+                                        Text="Start" />
+                                </StackPanel>
+                            </Setter.Value>
+                        </Setter>
+                        <Style.Triggers>
+                            <Trigger Property="IsChecked" Value="true">
+                                <Setter Property="Content">
+                                    <Setter.Value>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Image
+                                                Margin="1"
+                                                HorizontalAlignment="Left"
+                                                Source="{StaticResource svg_stop}" />
+                                            <TextBlock
+                                                Margin="5,0"
+                                                VerticalAlignment="Center"
+                                                Text="Starting" />
+                                        </StackPanel>
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </ToggleButton.Style>
+            </ToggleButton>
+        </DockPanel>
+        <ListView
+            x:Name="LV_ImageList"
+            Grid.Row="1"
+            ItemTemplate="{StaticResource ItemTemplate}"
+            ItemsSource="{Binding ImageList}">
+            <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem">
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                </Style>
+            </ListView.ItemContainerStyle>
+        </ListView>
+    </Grid>
+</Window>
