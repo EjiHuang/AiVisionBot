@@ -13,5 +13,7 @@ namespace MainView
         public static string CAPTURE_FOLDER_PATH = AppDomain.CurrentDomain.BaseDirectory + "capture\\";
         public static ObservableCollection<Bitmap> IMAGE_LIST { get; set; } = new ObservableCollection<Bitmap>();
         public static bool ENABLE_IMAGE_RECOGNITION = false;
+        public static bool FRAME_PROCESS_FLAGS = true;
+        public static long EXCUTE_TIME = 0;
     }
 }

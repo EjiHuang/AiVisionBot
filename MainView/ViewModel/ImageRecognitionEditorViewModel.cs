@@ -57,7 +57,7 @@ namespace MainView.ViewModel
         }
 
         [AsyncCommand]
-        public void StartCaptureCommand(object sender)
+        public void StartCaptureCommand()
         {
             // Set flag and clone image list.
             lock (this)
@@ -68,6 +68,7 @@ namespace MainView.ViewModel
                 }
                 else
                 {
+                    GLOBALS.IMAGE_LIST.Clear();
                     foreach (var image in ImageList)
                     {
                         GLOBALS.IMAGE_LIST.Add(image.Bitmap);

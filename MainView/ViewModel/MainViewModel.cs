@@ -266,11 +266,13 @@ namespace MainView.ViewModel
             // Save current frame?
             if (IsSaveFrame == true)
             {
-                Task.Run(() => SaveCurrentFrame(frame));
+                // Task.Run(() => SaveCurrentFrame(frame));
+                SaveCurrentFrame(frame);
             }
             else
             {
-                Task.Run(() => ImageProcessing(frame));
+                // Task.Run(() => ImageProcessing(frame));
+                ImageProcessing(frame);
             }
         }
 
@@ -290,20 +292,67 @@ namespace MainView.ViewModel
 
         }
 
-        private async void ImageProcessing(Bitmap frame, bool isDispose = true)
+        private void ImageProcessing(Bitmap frame, bool isDispose = true)
         {
             // Run in background thread.
             if (GLOBALS.ENABLE_IMAGE_RECOGNITION == true)
             {
+                if (GLOBALS.FRAME_PROCESS_FLAGS == true)
+                {
+                    Bitmap buffer = (Bitmap)frame.Clone();
+                    GLOBALS.FRAME_PROCESS_FLAGS = false;
 
-                var posList = ImageRecognition.GetSubPositionsOpenCV(frame, GLOBALS.IMAGE_LIST);
+                    Task.Run(async () =>
+                     {
+                         var watch = Stopwatch.StartNew();
 
-                Debug.WriteLine($"Count:{posList.Count}");
+                         var posList = ImageRecognition.GetSubPositionsOpenCV(buffer, GLOBALS.IMAGE_LIST, out Bitmap dst);
 
+                         // Debug code.
+                         lock (this)
+                         {
+                             using Graphics g = Graphics.FromImage(dst);
+                             if (posList.Count > 0)
+                             {
+                                 var j = 0;
+                                 foreach (var poss in posList)
+                                 {
+                                     if (poss.Count > 0)
+                                     {
+                                         foreach (var pos in poss)
+                                         {
+                                             g.DrawRectangle(Pens.Red, pos.X, pos.Y, GLOBALS.IMAGE_LIST[j].Width, GLOBALS.IMAGE_LIST[j].Height);
+                                         }
+                                     }
+                                     j++;
+                                 }
+                             }
+                         }
+
+                         GLOBALS.FRAME_PROCESS_FLAGS = true;
+
+                         watch.Stop();
+                         GLOBALS.EXCUTE_TIME = watch.ElapsedMilliseconds;
+
+                         await ThreadHelper.UIThread;
+                         {
+                             // Show the dst image in writeablebitmap control.
+                             if (CurrentFrameImage == null || CurrentFrameImage.Width != dst.Width || CurrentFrameImage.Height != dst.Height)
+                             {
+                                 CurrentFrameImage = new WriteableBitmap(dst.Width, dst.Height, 96, 96, PixelFormats.Bgra32, null);
+                             }
+                             var bitmapData = dst.LockBits(new Rectangle(0, 0, dst.Width, dst.Height), ImageLockMode.ReadOnly, dst.PixelFormat);
+                             CurrentFrameImage.WritePixels(new Int32Rect(0, 0, dst.Width, dst.Height), bitmapData.Scan0, dst.Width * dst.Height * 4, dst.Width * 4);
+                             dst.UnlockBits(bitmapData);
+
+                             // Bitmap dispose.
+                             buffer.Dispose();
+                             dst.Dispose();
+                         }
+                     });
+                }
             }
-
-            // Run in ui thread.
-            await ThreadHelper.UIThread;
+            else
             {
                 // Show the frame image in writeablebitmap control.
                 if (CurrentFrameImage == null || CurrentFrameImage.Width != frame.Width || CurrentFrameImage.Height != frame.Height)
@@ -314,9 +363,10 @@ namespace MainView.ViewModel
                 CurrentFrameImage.WritePixels(new Int32Rect(0, 0, frame.Width, frame.Height), bitmapData.Scan0, frame.Width * frame.Height * 4, frame.Width * 4);
                 frame.UnlockBits(bitmapData);
 
-                if (isDispose) frame.Dispose();
+                GLOBALS.EXCUTE_TIME = 0;
             }
 
+            if (isDispose) frame.Dispose();
         }
 
         /// <summary>

@@ -76,6 +76,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="auto" />
             <RowDefinition />
+            <RowDefinition Height="auto" />
         </Grid.RowDefinitions>
         <DockPanel
             Grid.Row="0"
@@ -167,5 +168,31 @@
                 </Style>
             </ListView.ItemContainerStyle>
         </ListView>
+        <StatusBar
+            Grid.Row="2"
+            Margin="2,0,0,0"
+            VerticalAlignment="Center"
+            Background="#F0F0F0">
+            <StatusBarItem>
+                <TextBlock FontWeight="Bold" Text="FPS :" />
+            </StatusBarItem>
+            <StatusBarItem Margin="0,0,10,0" HorizontalAlignment="Left">
+                <TextBlock
+                    x:Name="TB_FPS"
+                    FontWeight="Bold"
+                    Foreground="Green"
+                    Text="0" />
+            </StatusBarItem>
+            <StatusBarItem>
+                <TextBlock FontWeight="Bold" Text="EXCUTE TIME：" />
+            </StatusBarItem>
+            <StatusBarItem HorizontalAlignment="Left">
+                <TextBlock
+                    x:Name="TB_ExcuteTime"
+                    FontWeight="Bold"
+                    Foreground="Green"
+                    Text="0 ms" />
+            </StatusBarItem>
+        </StatusBar>
     </Grid>
 </Window>
