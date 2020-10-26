@@ -10,8 +10,8 @@ namespace MainView
     public partial class MainWindow : Windows9xClassic.Windows9xClassicWindow, IDisposable
     {
         private bool disposed;
-        //private BasicApplication capturer;
-        private BasicCapturer capturer;
+        private BasicApplication capturer;
+        // private BasicCapturer capturer;
 
         public MainWindow()
         {
@@ -20,10 +20,8 @@ namespace MainView
 
         private void CompositionHost_Loaded(object sender, RoutedEventArgs e)
         {
-            //capturer = new BasicApplication(CompositionHost.Compositor);
-            //CompositionHost.SetChild(capturer.Visual);
-
-            capturer = new BasicCapturer();
+            capturer = new BasicApplication(CHC.Compositor);
+            CHC.SetChild(capturer.Visual);
 
             var viewModel = MainVM;
             viewModel.Capturer = capturer;
@@ -63,10 +61,10 @@ namespace MainView
 
         private void Windows9xClassicWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            capturer = new BasicCapturer();
+            //capturer = new BasicCapturer();
 
-            var viewModel = MainVM;
-            viewModel.Capturer = capturer;
+            //var viewModel = MainVM;
+            //viewModel.Capturer = capturer;
         }
     }
 }

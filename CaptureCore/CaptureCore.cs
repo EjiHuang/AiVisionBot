@@ -1,4 +1,5 @@
 ﻿using Composition.WindowsRuntimeHelpers;
+using SharpDX;
 using SharpDX.Direct3D11;
 using System;
 using System.Drawing;
@@ -9,6 +10,11 @@ using Windows.Graphics;
 using Windows.Graphics.Capture;
 using Windows.Graphics.DirectX.Direct3D11;
 using Windows.UI.Composition;
+using SharpDX.WIC;
+using WICBitmap = SharpDX.WIC.Bitmap;
+using D2D1PixelFormat = SharpDX.Direct2D1.PixelFormat;
+using Bitmap = System.Drawing.Bitmap;
+using PixelFormat = System.Drawing.Imaging.PixelFormat;
 
 namespace CaptureCore
 {
@@ -18,6 +24,7 @@ namespace CaptureCore
         private readonly Direct3D11CaptureFramePool framePool;
         private readonly GraphicsCaptureSession session;
         private SizeInt32 lastSize;
+        private readonly ImagingFactory wicFactory;
 
         private readonly IDirect3DDevice device;
         private readonly Device d3dDevice;
@@ -31,6 +38,7 @@ namespace CaptureCore
             item = i;
             device = d;
             d3dDevice = Direct3D11Helper.CreateSharpDXDevice(device);
+            wicFactory = new ImagingFactory();
 
             // 建立DirectX图形基础设施工厂（DirectX Graphics Infrastructure，DXGI）
             var dxgiFactory = new SharpDX.DXGI.Factory2();
@@ -77,6 +85,7 @@ namespace CaptureCore
             framePool?.Dispose();
             swapChain?.Dispose();
             d3dDevice?.Dispose();
+            wicFactory?.Dispose();
         }
 
         public void StartCapture()
@@ -140,10 +149,8 @@ namespace CaptureCore
             }
         }
 
-        public Bitmap TryGetOneFrameToBitmap(Texture2D tex)
+        public void TryGetOneFrameToBitmap(Texture2D tex)
         {
-            Bitmap currentFrameBitmap = new Bitmap(tex.Description.Width, tex.Description.Height, PixelFormat.Format32bppArgb);
-
             using Texture2D copy = new Texture2D(d3dDevice, new Texture2DDescription
             {
                 Height = tex.Description.Height,
@@ -159,37 +166,79 @@ namespace CaptureCore
             });
             d3dDevice.ImmediateContext.CopyResource(tex, copy);
 
-            var dataBox = d3dDevice.ImmediateContext.MapSubresource(copy, 0, MapMode.Read, SharpDX.Direct3D11.MapFlags.None);
+            var dataBox = d3dDevice.ImmediateContext.MapSubresource(copy, 0, MapMode.Read, MapFlags.None, out DataStream dataStream);
+
+            #region wic version
+
+            var rect = new DataRectangle
+            {
+                DataPointer = dataStream.DataPointer,
+                Pitch = dataBox.RowPitch
+            };
+
+            using var wicBitmap = new WICBitmap(wicFactory,
+                copy.Description.Width,
+                copy.Description.Height,
+                SharpDX.WIC.PixelFormat.Format32bppPBGRA,
+                rect);
+
+            var width = wicBitmap.Size.Width;
+            var height = wicBitmap.Size.Height;
+            var gdiBitmap = new Bitmap(width, height, PixelFormat.Format32bppPArgb);
+
             try
             {
-                BitmapData bitmapData = currentFrameBitmap.LockBits(new Rectangle(0, 0, tex.Description.Width, tex.Description.Height),
-                    ImageLockMode.WriteOnly, currentFrameBitmap.PixelFormat);
-                try
-                {
-                    var srcPtr = dataBox.DataPointer;
-                    var dstPtr = bitmapData.Scan0;
+                var gdiBitmapData = gdiBitmap.LockBits(
+                    new Rectangle(0, 0, gdiBitmap.Width, gdiBitmap.Height),
+                    ImageLockMode.WriteOnly,
+                    PixelFormat.Format32bppPArgb);
 
-                    for (var y = 0; y < currentFrameBitmap.Height; y++)
-                    {
-                        memcpy(dstPtr, srcPtr, new UIntPtr((uint)(currentFrameBitmap.Width * 4)));
-                        srcPtr = IntPtr.Add(srcPtr, dataBox.RowPitch);
-                        dstPtr = IntPtr.Add(dstPtr, bitmapData.Stride);
-                    }
-                }
-                finally
-                {
-                    currentFrameBitmap.UnlockBits(bitmapData);
-                }
+                wicBitmap.CopyPixels(gdiBitmapData.Stride, gdiBitmapData.Scan0, gdiBitmapData.Height * gdiBitmapData.Stride);
+
+                gdiBitmap.UnlockBits(gdiBitmapData);
+
+                // 回调
+                GetOneFrameFromBitmapEvent.Invoke(gdiBitmap);
             }
             finally
             {
                 d3dDevice.ImmediateContext.UnmapSubresource(copy, 0);
+                dataStream.Dispose();
             }
 
-            // 回调
-            GetOneFrameFromBitmapEvent.Invoke(currentFrameBitmap);
+            #endregion
 
-            return currentFrameBitmap;
+            //var width = copy.Description.Width;
+            //var height = copy.Description.Height;
+            //var gdiBitmap = new Bitmap(width, height, PixelFormat.Format32bppPArgb);
+            //try
+            //{
+            //    BitmapData bitmapData = gdiBitmap.LockBits(new Rectangle(0, 0, tex.Description.Width, tex.Description.Height),
+            //        ImageLockMode.WriteOnly, gdiBitmap.PixelFormat);
+            //    try
+            //    {
+            //        var srcPtr = dataBox.DataPointer;
+            //        var dstPtr = bitmapData.Scan0;
+
+            //        for (var y = 0; y < gdiBitmap.Height; y++)
+            //        {
+            //            memcpy(dstPtr, srcPtr, new UIntPtr((uint)(gdiBitmap.Width * 4)));
+            //            srcPtr = IntPtr.Add(srcPtr, dataBox.RowPitch);
+            //            dstPtr = IntPtr.Add(dstPtr, bitmapData.Stride);
+            //        }
+            //    }
+            //    finally
+            //    {
+            //        gdiBitmap.UnlockBits(bitmapData);
+            //    }
+            //}
+            //finally
+            //{
+            //    d3dDevice.ImmediateContext.UnmapSubresource(copy, 0);
+            //}
+
+            //// 回调
+            //GetOneFrameFromBitmapEvent.Invoke(gdiBitmap);
         }
 
         public async Task<Bitmap> TryGetOneFrameAsync()

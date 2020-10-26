@@ -1,6 +1,5 @@
 ﻿using Composition.WindowsRuntimeHelpers;
 using System;
-using System.Drawing;
 using System.Numerics;
 using Windows.Graphics.Capture;
 using Windows.Graphics.DirectX.Direct3D11;
@@ -17,7 +16,7 @@ namespace CaptureCore
         private readonly CompositionSurfaceBrush brush;
 
         private readonly IDirect3DDevice device;
-        private BasicCapture capture;
+        public BasicCapture capture_core;
 
         public BasicApplication(Compositor c)
         {
@@ -52,25 +51,20 @@ namespace CaptureCore
 
         public void StopCapture()
         {
-            capture?.Dispose();
+            capture_core?.Dispose();
             brush.Surface = null;
         }
 
         public void StartCaptureFromItem(GraphicsCaptureItem item)
         {
             StopCapture();
-            capture = new BasicCapture(device, item);
+            capture_core = new BasicCapture(device, item);
 
-            var surface = capture.CreateSurface(compositor);
+            var surface = capture_core.CreateSurface(compositor);
             brush.Surface = surface;
 
-            capture.StartCapture();
+            capture_core.StartCapture();
         }
-
-        //public Bitmap TryGetOneFrame()
-        //{
-        //    return capture.CurrentFrameBitmap;
-        //}
 
         public void Dispose()
         {

@@ -168,23 +168,20 @@
                 Grid.Row="0"
                 Grid.Column="0"
                 Margin="0,0,2,0">
-                <TabItem x:Name="TabItem_FrameEditor" Header="Frame Editor">
+                <TabItem x:Name="TabItem_FrameEditor" Header="Frame Preview">
                     <Grid>
-                        <Image
+                        <!--<Image
                             Margin="5"
                             Source="{Binding CurrentFrameImage}"
-                            Stretch="Uniform" />
-                    </Grid>
-                </TabItem>
-                <!--<TabItem Header="Capture View">
-                    <Grid x:Name="CaptureGrid">
+                            Stretch="Uniform" />-->
                         <uc:CompositionHostControl
-                            x:Name="CompositionHost"
+                            x:Name="CHC"
+                            Margin="5"
                             Background="Transparent"
                             Loaded="CompositionHost_Loaded"
                             Unloaded="CompositionHost_Unloaded" />
                     </Grid>
-                </TabItem>-->
+                </TabItem>
             </TabControl>
             <StackPanel
                 Grid.Row="0"

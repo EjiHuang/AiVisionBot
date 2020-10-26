@@ -47,7 +47,7 @@ namespace MainView.ViewModel
         /// <summary>
         /// Basic sample application.
         /// </summary>
-        public BasicCapturer Capturer
+        public BasicApplication Capturer
         {
             get => GetProperty(() => Capturer);
             set => SetProperty(() => Capturer, value);
@@ -299,57 +299,117 @@ namespace MainView.ViewModel
             {
                 if (GLOBALS.FRAME_PROCESS_FLAGS == true)
                 {
+                    Bitmap copy = (Bitmap)frame.Clone();
+                    GLOBALS.FRAME_PROCESS_FLAGS = false;
+                    Bitmap dst = null;
+
+                    Task.Run(() =>
+                     {
+                         try
+                         {
+                             var watch = Stopwatch.StartNew();
+
+                             var posList = ImageRecognition.GetSubPositionsOpenCV(copy, GLOBALS.IMAGE_LIST, out dst);
+
+                             // Debug code.
+                             lock (this)
+                             {
+                                 using Graphics g = Graphics.FromImage(dst);
+                                 if (posList.Count > 0)
+                                 {
+                                     var j = 0;
+                                     foreach (var poss in posList)
+                                     {
+                                         if (poss.Count > 0)
+                                         {
+                                             foreach (var pos in poss)
+                                             {
+                                                 g.DrawRectangle(Pens.Red, pos.X, pos.Y, GLOBALS.IMAGE_LIST[j].Width, GLOBALS.IMAGE_LIST[j].Height);
+                                             }
+                                         }
+                                         j++;
+                                     }
+                                 }
+                             }
+
+                             GLOBALS.FRAME_PROCESS_FLAGS = true;
+
+                             watch.Stop();
+                             GLOBALS.EXCUTE_TIME = watch.ElapsedMilliseconds;
+                         }
+                         finally
+                         {
+                             // Bitmap dispose.
+                             copy?.Dispose();
+                             dst?.Dispose();
+                         }
+                     });
+                }
+            }
+
+            if (isDispose) frame.Dispose();
+        }
+
+        #region Image process writeablebitmap version.
+
+        private void ImageProcessingEx(Bitmap frame, bool isDispose = true)
+        {
+            // Run in background thread.
+            if (GLOBALS.ENABLE_IMAGE_RECOGNITION == true)
+            {
+                if (GLOBALS.FRAME_PROCESS_FLAGS == true)
+                {
                     Bitmap buffer = (Bitmap)frame.Clone();
                     GLOBALS.FRAME_PROCESS_FLAGS = false;
 
                     Task.Run(async () =>
-                     {
-                         var watch = Stopwatch.StartNew();
+                    {
+                        var watch = Stopwatch.StartNew();
 
-                         var posList = ImageRecognition.GetSubPositionsOpenCV(buffer, GLOBALS.IMAGE_LIST, out Bitmap dst);
+                        var posList = ImageRecognition.GetSubPositionsOpenCV(buffer, GLOBALS.IMAGE_LIST, out Bitmap dst);
 
-                         // Debug code.
-                         lock (this)
-                         {
-                             using Graphics g = Graphics.FromImage(dst);
-                             if (posList.Count > 0)
-                             {
-                                 var j = 0;
-                                 foreach (var poss in posList)
-                                 {
-                                     if (poss.Count > 0)
-                                     {
-                                         foreach (var pos in poss)
-                                         {
-                                             g.DrawRectangle(Pens.Red, pos.X, pos.Y, GLOBALS.IMAGE_LIST[j].Width, GLOBALS.IMAGE_LIST[j].Height);
-                                         }
-                                     }
-                                     j++;
-                                 }
-                             }
-                         }
+                        // Debug code.
+                        lock (this)
+                        {
+                            using Graphics g = Graphics.FromImage(dst);
+                            if (posList.Count > 0)
+                            {
+                                var j = 0;
+                                foreach (var poss in posList)
+                                {
+                                    if (poss.Count > 0)
+                                    {
+                                        foreach (var pos in poss)
+                                        {
+                                            g.DrawRectangle(Pens.Red, pos.X, pos.Y, GLOBALS.IMAGE_LIST[j].Width, GLOBALS.IMAGE_LIST[j].Height);
+                                        }
+                                    }
+                                    j++;
+                                }
+                            }
+                        }
 
-                         GLOBALS.FRAME_PROCESS_FLAGS = true;
+                        GLOBALS.FRAME_PROCESS_FLAGS = true;
 
-                         watch.Stop();
-                         GLOBALS.EXCUTE_TIME = watch.ElapsedMilliseconds;
+                        watch.Stop();
+                        GLOBALS.EXCUTE_TIME = watch.ElapsedMilliseconds;
 
-                         await ThreadHelper.UIThread;
-                         {
-                             // Show the dst image in writeablebitmap control.
-                             if (CurrentFrameImage == null || CurrentFrameImage.Width != dst.Width || CurrentFrameImage.Height != dst.Height)
-                             {
-                                 CurrentFrameImage = new WriteableBitmap(dst.Width, dst.Height, 96, 96, PixelFormats.Bgra32, null);
-                             }
-                             var bitmapData = dst.LockBits(new Rectangle(0, 0, dst.Width, dst.Height), ImageLockMode.ReadOnly, dst.PixelFormat);
-                             CurrentFrameImage.WritePixels(new Int32Rect(0, 0, dst.Width, dst.Height), bitmapData.Scan0, dst.Width * dst.Height * 4, dst.Width * 4);
-                             dst.UnlockBits(bitmapData);
+                        await ThreadHelper.UIThread;
+                        {
+                            // Show the dst image in writeablebitmap control.
+                            if (CurrentFrameImage == null || CurrentFrameImage.Width != dst.Width || CurrentFrameImage.Height != dst.Height)
+                            {
+                                CurrentFrameImage = new WriteableBitmap(dst.Width, dst.Height, 96, 96, PixelFormats.Bgra32, null);
+                            }
+                            var bitmapData = dst.LockBits(new Rectangle(0, 0, dst.Width, dst.Height), ImageLockMode.ReadOnly, dst.PixelFormat);
+                            CurrentFrameImage.WritePixels(new Int32Rect(0, 0, dst.Width, dst.Height), bitmapData.Scan0, dst.Width * dst.Height * 4, dst.Width * 4);
+                            dst.UnlockBits(bitmapData);
 
-                             // Bitmap dispose.
-                             buffer.Dispose();
-                             dst.Dispose();
-                         }
-                     });
+                            // Bitmap dispose.
+                            buffer.Dispose();
+                            dst.Dispose();
+                        }
+                    });
                 }
             }
             else
@@ -368,6 +428,8 @@ namespace MainView.ViewModel
 
             if (isDispose) frame.Dispose();
         }
+
+        #endregion
 
         /// <summary>
         /// Start hwnd capture.
