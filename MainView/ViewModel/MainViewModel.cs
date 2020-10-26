@@ -2,6 +2,7 @@
 using Composition.WindowsRuntimeHelpers;
 using DevExpress.Mvvm;
 using DevExpress.Mvvm.DataAnnotations;
+using GameOverlay.Windows;
 using ImageProcessor;
 using MainView.Framework;
 using MainView.Model;
@@ -94,6 +95,16 @@ namespace MainView.ViewModel
         /// </summary>
         private static List<EnumProcessHelper.ProcessInfo> CurrentProcesses;
 
+        /// <summary>
+        /// Game.Overlay.Net sticky window.
+        /// </summary>
+        private StickyWindow overlayWindow;
+
+        /// <summary>
+        /// Game.Overlay.Net sticky window's graphics.
+        /// </summary>
+        private GameOverlay.Drawing.Graphics gfx;
+
         #endregion
 
         #region public methods
@@ -161,6 +172,24 @@ namespace MainView.ViewModel
                     try
                     {
                         StartHwndCapture(hwnd);
+
+                        // Init overlay window.
+                        gfx = new GameOverlay.Drawing.Graphics
+                        {
+                            MeasureFPS = true,
+                            PerPrimitiveAntiAliasing = true,
+                            TextAntiAliasing = true,
+                            UseMultiThreadedFactories = false,
+                            VSync = true,
+                            WindowHandle = IntPtr.Zero
+                        };
+                        overlayWindow = new StickyWindow(hwnd, gfx)
+                        {
+                            IsTopmost = true,
+                            IsVisible = true,
+                            FPS = 30
+                        };
+                        overlayWindow.Create();
                     }
                     catch (Exception e)
                     {
@@ -314,7 +343,9 @@ namespace MainView.ViewModel
                              // Debug code.
                              lock (this)
                              {
-                                 using Graphics g = Graphics.FromImage(dst);
+                                 gfx.BeginScene();
+                                 gfx.ClearScene();
+
                                  if (posList.Count > 0)
                                  {
                                      var j = 0;
@@ -324,12 +355,17 @@ namespace MainView.ViewModel
                                          {
                                              foreach (var pos in poss)
                                              {
-                                                 g.DrawRectangle(Pens.Red, pos.X, pos.Y, GLOBALS.IMAGE_LIST[j].Width, GLOBALS.IMAGE_LIST[j].Height);
+                                                 gfx.DrawRectangleEdges(
+                                                     gfx.CreateSolidBrush(GameOverlay.Drawing.Color.Red),
+                                                     new GameOverlay.Drawing.Rectangle(pos.X, pos.Y, pos.X + GLOBALS.IMAGE_LIST[j].Width, pos.Y + GLOBALS.IMAGE_LIST[j].Height),
+                                                     2);
                                              }
                                          }
                                          j++;
                                      }
                                  }
+
+                                 gfx.EndScene();
                              }
 
                              GLOBALS.FRAME_PROCESS_FLAGS = true;

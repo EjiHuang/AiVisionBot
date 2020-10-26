@@ -12,7 +12,6 @@ using Windows.Graphics.DirectX.Direct3D11;
 using Windows.UI.Composition;
 using SharpDX.WIC;
 using WICBitmap = SharpDX.WIC.Bitmap;
-using D2D1PixelFormat = SharpDX.Direct2D1.PixelFormat;
 using Bitmap = System.Drawing.Bitmap;
 using PixelFormat = System.Drawing.Imaging.PixelFormat;
 
@@ -170,75 +169,75 @@ namespace CaptureCore
 
             #region wic version
 
-            var rect = new DataRectangle
-            {
-                DataPointer = dataStream.DataPointer,
-                Pitch = dataBox.RowPitch
-            };
+            //var rect = new DataRectangle
+            //{
+            //    DataPointer = dataStream.DataPointer,
+            //    Pitch = dataBox.RowPitch
+            //};
 
-            using var wicBitmap = new WICBitmap(wicFactory,
-                copy.Description.Width,
-                copy.Description.Height,
-                SharpDX.WIC.PixelFormat.Format32bppPBGRA,
-                rect);
+            //using var wicBitmap = new WICBitmap(wicFactory,
+            //    copy.Description.Width,
+            //    copy.Description.Height,
+            //    SharpDX.WIC.PixelFormat.Format32bppPBGRA,
+            //    rect);
 
-            var width = wicBitmap.Size.Width;
-            var height = wicBitmap.Size.Height;
-            var gdiBitmap = new Bitmap(width, height, PixelFormat.Format32bppPArgb);
-
-            try
-            {
-                var gdiBitmapData = gdiBitmap.LockBits(
-                    new Rectangle(0, 0, gdiBitmap.Width, gdiBitmap.Height),
-                    ImageLockMode.WriteOnly,
-                    PixelFormat.Format32bppPArgb);
-
-                wicBitmap.CopyPixels(gdiBitmapData.Stride, gdiBitmapData.Scan0, gdiBitmapData.Height * gdiBitmapData.Stride);
-
-                gdiBitmap.UnlockBits(gdiBitmapData);
-
-                // 回调
-                GetOneFrameFromBitmapEvent.Invoke(gdiBitmap);
-            }
-            finally
-            {
-                d3dDevice.ImmediateContext.UnmapSubresource(copy, 0);
-                dataStream.Dispose();
-            }
-
-            #endregion
-
-            //var width = copy.Description.Width;
-            //var height = copy.Description.Height;
+            //var width = wicBitmap.Size.Width;
+            //var height = wicBitmap.Size.Height;
             //var gdiBitmap = new Bitmap(width, height, PixelFormat.Format32bppPArgb);
+
             //try
             //{
-            //    BitmapData bitmapData = gdiBitmap.LockBits(new Rectangle(0, 0, tex.Description.Width, tex.Description.Height),
-            //        ImageLockMode.WriteOnly, gdiBitmap.PixelFormat);
-            //    try
-            //    {
-            //        var srcPtr = dataBox.DataPointer;
-            //        var dstPtr = bitmapData.Scan0;
+            //    var gdiBitmapData = gdiBitmap.LockBits(
+            //        new Rectangle(0, 0, gdiBitmap.Width, gdiBitmap.Height),
+            //        ImageLockMode.WriteOnly,
+            //        PixelFormat.Format32bppPArgb);
 
-            //        for (var y = 0; y < gdiBitmap.Height; y++)
-            //        {
-            //            memcpy(dstPtr, srcPtr, new UIntPtr((uint)(gdiBitmap.Width * 4)));
-            //            srcPtr = IntPtr.Add(srcPtr, dataBox.RowPitch);
-            //            dstPtr = IntPtr.Add(dstPtr, bitmapData.Stride);
-            //        }
-            //    }
-            //    finally
-            //    {
-            //        gdiBitmap.UnlockBits(bitmapData);
-            //    }
+            //    wicBitmap.CopyPixels(gdiBitmapData.Stride, gdiBitmapData.Scan0, gdiBitmapData.Height * gdiBitmapData.Stride);
+
+            //    gdiBitmap.UnlockBits(gdiBitmapData);
+
+            //    // 回调
+            //    GetOneFrameFromBitmapEvent.Invoke(gdiBitmap);
             //}
             //finally
             //{
             //    d3dDevice.ImmediateContext.UnmapSubresource(copy, 0);
+            //    dataStream.Dispose();
             //}
 
-            //// 回调
-            //GetOneFrameFromBitmapEvent.Invoke(gdiBitmap);
+            #endregion
+
+            var width = copy.Description.Width;
+            var height = copy.Description.Height;
+            var gdiBitmap = new Bitmap(width, height, PixelFormat.Format32bppPArgb);
+            try
+            {
+                BitmapData bitmapData = gdiBitmap.LockBits(new Rectangle(0, 0, tex.Description.Width, tex.Description.Height),
+                    ImageLockMode.WriteOnly, gdiBitmap.PixelFormat);
+                try
+                {
+                    var srcPtr = dataBox.DataPointer;
+                    var dstPtr = bitmapData.Scan0;
+
+                    for (var y = 0; y < gdiBitmap.Height; y++)
+                    {
+                        memcpy(dstPtr, srcPtr, new UIntPtr((uint)(gdiBitmap.Width * 4)));
+                        srcPtr = IntPtr.Add(srcPtr, dataBox.RowPitch);
+                        dstPtr = IntPtr.Add(dstPtr, bitmapData.Stride);
+                    }
+                }
+                finally
+                {
+                    gdiBitmap.UnlockBits(bitmapData);
+                }
+            }
+            finally
+            {
+                d3dDevice.ImmediateContext.UnmapSubresource(copy, 0);
+            }
+
+            // 回调
+            GetOneFrameFromBitmapEvent.Invoke(gdiBitmap);
         }
 
         public async Task<Bitmap> TryGetOneFrameAsync()
