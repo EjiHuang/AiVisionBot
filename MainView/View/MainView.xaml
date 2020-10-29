@@ -168,7 +168,7 @@
                 Grid.Row="0"
                 Grid.Column="0"
                 Margin="0,0,2,0">
-                <TabItem x:Name="TabItem_FrameEditor" Header="Frame Preview">
+                <TabItem x:Name="TabItem_FrameEditor" Header="Preview">
                     <Grid>
                         <!--<Image
                             Margin="5"
@@ -180,6 +180,86 @@
                             Background="Transparent"
                             Loaded="CompositionHost_Loaded"
                             Unloaded="CompositionHost_Unloaded" />
+                    </Grid>
+                </TabItem>
+                <TabItem x:Name="TabItem_SampleCollector" Header="Sample Collector">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition />
+                            <RowDefinition />
+                        </Grid.RowDefinitions>
+                        <GroupBox Grid.Row="0" Header="Manual">
+                            <StackPanel Orientation="Vertical">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="auto" />
+                                        <ColumnDefinition Width="auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Button
+                                        Grid.Column="0"
+                                        Width="125"
+                                        Margin="0,0,5,0"
+                                        Padding="10,0"
+                                        Command="{Binding MouseCapturerCommand}"
+                                        CommandParameter="{Binding RelativeSource={RelativeSource Mode=Self}}"
+                                        Content="Positive Capturer" />
+                                    <TextBlock
+                                        Grid.Column="1"
+                                        Margin="0,0,5,0"
+                                        VerticalAlignment="Center"
+                                        FontSize="14"
+                                        Text="Path:" />
+                                    <TextBox
+                                        Grid.Column="2"
+                                        VerticalAlignment="Center"
+                                        FontSize="14"
+                                        Text="{Binding PositiveSamplesSavePath, Mode=TwoWay}" />
+                                    <Button
+                                        Grid.Column="3"
+                                        Margin="5,0,10,0"
+                                        Padding="10,0"
+                                        Command="{Binding AddSamplesCommand}"
+                                        CommandParameter="{Binding PositiveSamplesSavePath}"
+                                        Content="Add Samples" />
+                                </Grid>
+                                <Grid Margin="0,5">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="auto" />
+                                        <ColumnDefinition Width="auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Button
+                                        Grid.Column="0"
+                                        Width="125"
+                                        Margin="0,0,5,0"
+                                        Padding="10,0"
+                                        Command="{Binding MouseCapturerCommand}"
+                                        CommandParameter="{Binding RelativeSource={RelativeSource Mode=Self}}"
+                                        Content="Negative Capturer" />
+                                    <TextBlock
+                                        Grid.Column="1"
+                                        Margin="0,0,5,0"
+                                        VerticalAlignment="Center"
+                                        FontSize="14"
+                                        Text="Path:" />
+                                    <TextBox
+                                        Grid.Column="2"
+                                        VerticalAlignment="Center"
+                                        FontSize="14"
+                                        Text="{Binding NegativeSamplesSavePath, Mode=TwoWay}" />
+                                    <Button
+                                        Grid.Column="3"
+                                        Margin="5,0,10,0"
+                                        Padding="10,0"
+                                        Command="{Binding AddSamplesCommand}"
+                                        CommandParameter="{Binding NegativeSamplesSavePath}"
+                                        Content="Add Samples" />
+                                </Grid>
+                            </StackPanel>
+                        </GroupBox>
                     </Grid>
                 </TabItem>
             </TabControl>

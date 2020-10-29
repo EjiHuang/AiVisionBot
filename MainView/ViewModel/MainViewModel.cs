@@ -13,12 +13,16 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using Windows.UI.Composition;
 
 namespace MainView.ViewModel
 {
@@ -81,6 +85,24 @@ namespace MainView.ViewModel
             set => SetProperty(() => EnableImageRecognition, value);
         }
 
+        /// <summary>
+        /// The positive samples save folder's path.
+        /// </summary>
+        public string PositiveSamplesSavePath
+        {
+            get => GetProperty(() => PositiveSamplesSavePath);
+            set => SetProperty(() => PositiveSamplesSavePath, value);
+        }
+
+        /// <summary>
+        /// The negative samples save folder's path.
+        /// </summary>
+        public string NegativeSamplesSavePath
+        {
+            get => GetProperty(() => NegativeSamplesSavePath);
+            set => SetProperty(() => NegativeSamplesSavePath, value);
+        }
+
         #endregion
 
         #region private properties
@@ -88,22 +110,22 @@ namespace MainView.ViewModel
         /// <summary>
         /// Save current frame?
         /// </summary>
-        private bool IsSaveFrame = false;
+        private bool _isSaveFrame = false;
 
         /// <summary>
         /// Current process list.
         /// </summary>
-        private static List<EnumProcessHelper.ProcessInfo> CurrentProcesses;
+        private static List<EnumProcessHelper.ProcessInfo> _currentProcesses;
 
         /// <summary>
         /// Game.Overlay.Net sticky window.
         /// </summary>
-        private StickyWindow overlayWindow;
+        private StickyWindow _stickyWindow;
 
         /// <summary>
         /// Game.Overlay.Net sticky window's graphics.
         /// </summary>
-        private GameOverlay.Drawing.Graphics gfx;
+        private GameOverlay.Drawing.Graphics _gfx;
 
         #endregion
 
@@ -123,8 +145,8 @@ namespace MainView.ViewModel
             Task.Run(async () =>
             {
                 // Get process list, maybe longer time.
-                CurrentProcesses = GetProcessList();
-                foreach (var p in CurrentProcesses)
+                _currentProcesses = GetProcessList();
+                foreach (var p in _currentProcesses)
                 {
                     p.ProcessIcon?.Freeze();
                 }
@@ -136,7 +158,7 @@ namespace MainView.ViewModel
                     if (ProcessInfoes.Count > 0)
                         ProcessInfoes.Clear();
                     // Update list.
-                    foreach (var p in CurrentProcesses)
+                    foreach (var p in _currentProcesses)
                     {
                         ProcessInfoes.Add(new ProcessModel
                         {
@@ -173,8 +195,8 @@ namespace MainView.ViewModel
                     {
                         StartHwndCapture(hwnd);
 
-                        // Init overlay window.
-                        gfx = new GameOverlay.Drawing.Graphics
+                        // Init sticky window.
+                        _gfx = new GameOverlay.Drawing.Graphics
                         {
                             MeasureFPS = true,
                             PerPrimitiveAntiAliasing = true,
@@ -183,13 +205,13 @@ namespace MainView.ViewModel
                             VSync = true,
                             WindowHandle = IntPtr.Zero
                         };
-                        overlayWindow = new StickyWindow(hwnd, gfx)
+                        _stickyWindow = new StickyWindow(hwnd, _gfx)
                         {
                             IsTopmost = true,
                             IsVisible = true,
                             FPS = 30
                         };
-                        overlayWindow.Create();
+                        _stickyWindow.Create();
                     }
                     catch (Exception e)
                     {
@@ -220,7 +242,7 @@ namespace MainView.ViewModel
         [AsyncCommand]
         public void SaveCurrentFrameCommand()
         {
-            IsSaveFrame = true;
+            _isSaveFrame = true;
         }
 
         [AsyncCommand]
@@ -245,6 +267,148 @@ namespace MainView.ViewModel
             new ImageRecognitionEditorView().Show();
         }
 
+        [AsyncCommand]
+        public void MouseCapturerCommand(object sender)
+        {
+            var btn = sender as Button;
+            var isP = true;
+            if (btn.Content.ToString() == "Negative Capturer")
+            {
+                isP = false;
+            }
+
+            Task.Run(() =>
+            {
+                var rnd = new Random();
+                // Init overlay window.
+                var overlayWindow = new OverlayWindow(0, 0, (int)SystemParameters.PrimaryScreenWidth, (int)SystemParameters.PrimaryScreenHeight)
+                {
+                    IsTopmost = true,
+                    IsVisible = true
+                };
+                var gfx = new GameOverlay.Drawing.Graphics
+                {
+                    MeasureFPS = true,
+                    Height = overlayWindow.Height,
+                    PerPrimitiveAntiAliasing = true,
+                    TextAntiAliasing = true,
+                    UseMultiThreadedFactories = false,
+                    VSync = true,
+                    Width = overlayWindow.Width,
+                    WindowHandle = IntPtr.Zero
+                };
+                overlayWindow.Create();
+                gfx.WindowHandle = overlayWindow.Handle;
+                gfx.Setup();
+
+                GameOverlay.Drawing.SolidBrush greenBrush = gfx.CreateSolidBrush(GameOverlay.Drawing.Color.Green);
+                GameOverlay.Drawing.SolidBrush redBrush = gfx.CreateSolidBrush(GameOverlay.Drawing.Color.Red);
+
+                var width = 200;
+                var height = 300;
+
+                while (true)
+                {
+                    var mousePos = GetMousePosition();
+                    //overlayWindow.X = mousePos.X - width / 2;
+                    //overlayWindow.Y = mousePos.Y - height / 2;
+
+                    gfx.BeginScene();
+                    gfx.ClearScene();
+
+                    Application.Current?.Dispatcher.BeginInvoke(new Action(() =>
+                    {
+                        // Resize the gfx draw.
+                        if (Keyboard.IsKeyDown(Key.Left))
+                        {
+                            if (width <= 0) width = 0;
+                            else width -= 1;
+                        }
+                        if (Keyboard.IsKeyDown(Key.Right))
+                        {
+                            width += 1;
+                        }
+                        if (Keyboard.IsKeyDown(Key.Up))
+                        {
+                            height += 1;
+                        }
+                        if (Keyboard.IsKeyDown(Key.Down))
+                        {
+                            if (height <= 0) height = 0;
+                            else height -= 1;
+                        }
+                    }));
+                    //width = width < 0 ? 0 : width;
+                    //height = height < 0 ? 0 : height;
+                    var left = mousePos.X - width / 2;
+                    var up = mousePos.Y - height / 2;
+
+                    gfx.DrawText(gfx.CreateFont("Arial", 14), redBrush, new GameOverlay.Drawing.Point(left, up - 18),
+                        $"Size: {width}x{height}  Pos:[{left},{up}]");
+                    gfx.DrawRectangle(greenBrush, left, up, left + width, up + height, 2);
+
+                    gfx.EndScene();
+
+                    // Save the sample.
+                    if (KeyboardInterceptor.IsKeyToggled(KeyboardInterceptor.Keys.Home))
+                    {
+                        var path = isP == true ? PositiveSamplesSavePath : NegativeSamplesSavePath;
+
+                        var i = Directory.GetFiles(path, "*.png", SearchOption.AllDirectories).Length;
+                        var fileName = $"{i}.png";
+                        CaptureScreen(width - 4, height - 4, left + 2, up + 2).Save($"{path}{fileName}", ImageFormat.Png);
+                        Console.Beep();
+                    }
+                    // Exit.
+                    if (KeyboardInterceptor.IsKeyToggled(KeyboardInterceptor.Keys.Escape))
+                    {
+                        gfx.BeginScene();
+                        gfx.ClearScene();
+                        gfx.EndScene();
+
+                        gfx.Dispose();
+                        overlayWindow.Dispose();
+                        break;
+                    }
+                }
+            });
+        }
+
+        [AsyncCommand]
+        public void AddSamplesCommand(object e)
+        {
+            var path = e as string;
+            var isP = true;
+            if (path == NegativeSamplesSavePath)
+            {
+                isP = false;
+            }
+
+            Microsoft.Win32.OpenFileDialog fileDialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Multiselect = true,
+                Filter = "All Image Files | *.*",
+                Title = "Please select image."
+            };
+
+            if ((bool)fileDialog.ShowDialog())
+            {
+                var arrPaths = fileDialog.FileNames;
+
+                if (arrPaths.Length > 0)
+                {
+                    // Save where.
+                    var targetPath = isP == true ? PositiveSamplesSavePath : NegativeSamplesSavePath;
+                    // Check the count of original files.
+                    // Copy files to target folder.
+                    foreach (var img in arrPaths)
+                    {
+                        File.Copy(img, $"{targetPath}{Path.GetFileName(img)}", true);
+                    }
+                }
+            }
+        }
+
         #endregion
 
         #region private methods
@@ -255,11 +419,11 @@ namespace MainView.ViewModel
         private void Initialize()
         {
             // Get process list.
-            CurrentProcesses = GetProcessList();
+            _currentProcesses = GetProcessList();
             // Clear list.
             if (ProcessInfoes.Count > 0)
                 ProcessInfoes.Clear();
-            foreach (var p in CurrentProcesses)
+            foreach (var p in _currentProcesses)
             {
                 ProcessInfoes.Add(new ProcessModel
                 {
@@ -269,6 +433,17 @@ namespace MainView.ViewModel
                     ProcessIcon = p.ProcessIcon,
                     MainWindowHandle = p.MainWindowHandle
                 });
+            }
+            // Initialize var.
+            PositiveSamplesSavePath = GLOBALS.SAMPLES_FOLDER_PATH + "Positive\\";
+            if (!Directory.Exists(PositiveSamplesSavePath))
+            {
+                Directory.CreateDirectory(PositiveSamplesSavePath);
+            }
+            NegativeSamplesSavePath = GLOBALS.SAMPLES_FOLDER_PATH + "Negative\\";
+            if (!Directory.Exists(NegativeSamplesSavePath))
+            {
+                Directory.CreateDirectory(NegativeSamplesSavePath);
             }
         }
 
@@ -293,7 +468,7 @@ namespace MainView.ViewModel
         private void ReceiveOneFrameCallback(Bitmap frame)
         {
             // Save current frame?
-            if (IsSaveFrame == true)
+            if (_isSaveFrame == true)
             {
                 // Task.Run(() => SaveCurrentFrame(frame));
                 SaveCurrentFrame(frame);
@@ -307,7 +482,7 @@ namespace MainView.ViewModel
 
         private void SaveCurrentFrame(Bitmap frame)
         {
-            IsSaveFrame = false;
+            _isSaveFrame = false;
 
             var watch = Stopwatch.StartNew();
 
@@ -343,8 +518,8 @@ namespace MainView.ViewModel
                              // Debug code.
                              lock (this)
                              {
-                                 gfx.BeginScene();
-                                 gfx.ClearScene();
+                                 _gfx.BeginScene();
+                                 _gfx.ClearScene();
 
                                  if (posList.Count > 0)
                                  {
@@ -355,8 +530,8 @@ namespace MainView.ViewModel
                                          {
                                              foreach (var pos in poss)
                                              {
-                                                 gfx.DrawRectangleEdges(
-                                                     gfx.CreateSolidBrush(GameOverlay.Drawing.Color.Red),
+                                                 _gfx.DrawRectangleEdges(
+                                                     _gfx.CreateSolidBrush(GameOverlay.Drawing.Color.Red),
                                                      new GameOverlay.Drawing.Rectangle(pos.X, pos.Y, pos.X + GLOBALS.IMAGE_LIST[j].Width, pos.Y + GLOBALS.IMAGE_LIST[j].Height),
                                                      2);
                                              }
@@ -365,7 +540,7 @@ namespace MainView.ViewModel
                                      }
                                  }
 
-                                 gfx.EndScene();
+                                 _gfx.EndScene();
                              }
 
                              GLOBALS.FRAME_PROCESS_FLAGS = true;
@@ -487,5 +662,78 @@ namespace MainView.ViewModel
 
         #endregion
 
+        #region Other method
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool GetCursorPos(ref Win32Point pt);
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct Win32Point
+        {
+            public int X;
+            public int Y;
+        };
+        private static System.Drawing.Point GetMousePosition()
+        {
+            var w32Mouse = new Win32Point();
+            GetCursorPos(ref w32Mouse);
+
+            return new System.Drawing.Point(w32Mouse.X, w32Mouse.Y);
+        }
+
+        public static Bitmap CaptureScreen(double width, double height, double x = 0, double y = 0)
+        {
+            int ix, iy, iw, ih;
+            ix = Convert.ToInt32(x);
+            iy = Convert.ToInt32(y);
+            iw = Convert.ToInt32(width);
+            ih = Convert.ToInt32(height);
+            if (iw <= 0) iw = 1;
+            if (ih <= 0) ih = 1;
+            Bitmap image = new Bitmap(iw, ih, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+            Graphics graphics = Graphics.FromImage(image);
+            graphics.CopyFromScreen(ix, iy, 0, 0, new System.Drawing.Size(iw, ih), CopyPixelOperation.SourceCopy);
+            return image;
+        }
+
+        public static Bitmap SaveScreen(double width, double height, double x = 0, double y = 0)
+        {
+            int ix, iy, iw, ih;
+            ix = Convert.ToInt32(x);
+            iy = Convert.ToInt32(y);
+            iw = Convert.ToInt32(width);
+            ih = Convert.ToInt32(height);
+            if (iw <= 0) iw = 1;
+            if (ih <= 0) ih = 1;
+            Bitmap myImage = new Bitmap(iw, ih);
+            try
+            {
+
+                Graphics gr1 = Graphics.FromImage(myImage);
+                IntPtr dc1 = gr1.GetHdc();
+                IntPtr dc2 = NativeMethods.GetWindowDC(NativeMethods.GetForegroundWindow());
+                NativeMethods.BitBlt(dc1, ix, iy, iw, ih, dc2, ix, iy, 13369376);
+                gr1.ReleaseHdc(dc1);
+            }
+            catch { }
+            return myImage;
+        }
+
+        internal class NativeMethods
+        {
+
+            [DllImport("user32.dll")]
+            public extern static IntPtr GetDesktopWindow();
+            [DllImport("user32.dll")]
+            public static extern IntPtr GetWindowDC(IntPtr hwnd);
+            [DllImport("user32.dll", CharSet = CharSet.Auto, ExactSpelling = true)]
+            public static extern IntPtr GetForegroundWindow();
+            [DllImport("gdi32.dll")]
+            public static extern UInt64 BitBlt(IntPtr hDestDC, int x, int y, int nWidth, int nHeight, IntPtr hSrcDC, int xSrc, int ySrc, System.Int32 dwRop);
+
+        }
+
+        #endregion
     }
 }
