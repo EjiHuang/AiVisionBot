@@ -57,7 +57,8 @@
                     VerticalAlignment="Center"
                     BorderThickness="0"
                     ItemsSource="{Binding ProcessInfoes}"
-                    SelectedIndex="{Binding ProcessIndex}">
+                    SelectedIndex="{Binding ProcessIndex}"
+                    SelectionChanged="ComboBox_SelectionChanged">
                     <ComboBox.ItemTemplate>
                         <DataTemplate>
                             <TextBlock Margin="2" Text="{Binding ProcessWindowTitle}" />
@@ -185,7 +186,7 @@
                 <TabItem x:Name="TabItem_SampleCollector" Header="Sample Collector">
                     <Grid>
                         <Grid.RowDefinitions>
-                            <RowDefinition />
+                            <RowDefinition Height="auto " />
                             <RowDefinition />
                         </Grid.RowDefinitions>
                         <GroupBox Grid.Row="0" Header="Manual">
@@ -204,7 +205,7 @@
                                         Padding="10,0"
                                         Command="{Binding MouseCapturerCommand}"
                                         CommandParameter="{Binding RelativeSource={RelativeSource Mode=Self}}"
-                                        Content="Positive Capturer" />
+                                        Content="Yolo Capturer" />
                                     <TextBlock
                                         Grid.Column="1"
                                         Margin="0,0,5,0"
@@ -215,50 +216,107 @@
                                         Grid.Column="2"
                                         VerticalAlignment="Center"
                                         FontSize="14"
-                                        Text="{Binding PositiveSamplesSavePath, Mode=TwoWay}" />
+                                        Text="{Binding SamplesSavePath, Mode=TwoWay}" />
                                     <Button
                                         Grid.Column="3"
                                         Margin="5,0,10,0"
                                         Padding="10,0"
                                         Command="{Binding AddSamplesCommand}"
-                                        CommandParameter="{Binding PositiveSamplesSavePath}"
                                         Content="Add Samples" />
                                 </Grid>
-                                <Grid Margin="0,5">
+                                <Grid Margin="0,5,0,0">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="auto" />
-                                        <ColumnDefinition Width="auto" />
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="auto" />
+                                        <ColumnDefinition />
                                     </Grid.ColumnDefinitions>
-                                    <Button
-                                        Grid.Column="0"
-                                        Width="125"
-                                        Margin="0,0,5,0"
-                                        Padding="10,0"
-                                        Command="{Binding MouseCapturerCommand}"
-                                        CommandParameter="{Binding RelativeSource={RelativeSource Mode=Self}}"
-                                        Content="Negative Capturer" />
-                                    <TextBlock
-                                        Grid.Column="1"
-                                        Margin="0,0,5,0"
-                                        VerticalAlignment="Center"
-                                        FontSize="14"
-                                        Text="Path:" />
-                                    <TextBox
-                                        Grid.Column="2"
-                                        VerticalAlignment="Center"
-                                        FontSize="14"
-                                        Text="{Binding NegativeSamplesSavePath, Mode=TwoWay}" />
-                                    <Button
-                                        Grid.Column="3"
-                                        Margin="5,0,10,0"
-                                        Padding="10,0"
-                                        Command="{Binding AddSamplesCommand}"
-                                        CommandParameter="{Binding NegativeSamplesSavePath}"
-                                        Content="Add Samples" />
+                                    <GroupBox Grid.Column="0" Header="Overlay Window">
+                                        <Grid Margin="1">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="auto" />
+                                                <ColumnDefinition Width="50" />
+                                            </Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition />
+                                                <RowDefinition />
+                                                <RowDefinition />
+                                                <RowDefinition />
+                                            </Grid.RowDefinitions>
+                                            <TextBlock
+                                                Grid.Row="0"
+                                                Grid.Column="0"
+                                                Text="Width" />
+                                            <TextBox
+                                                Grid.Row="0"
+                                                Grid.Column="1"
+                                                Text="{Binding MouseCapturerInfo.WinW, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
+                                            <TextBlock
+                                                Grid.Row="1"
+                                                Grid.Column="0"
+                                                Text="Height" />
+                                            <TextBox
+                                                Grid.Row="1"
+                                                Grid.Column="1"
+                                                Text="{Binding MouseCapturerInfo.WinH, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
+                                            <TextBlock
+                                                Grid.Row="2"
+                                                Grid.Column="0"
+                                                Text="Rect.Width" />
+                                            <TextBox
+                                                Grid.Row="2"
+                                                Grid.Column="1"
+                                                Text="{Binding MouseCapturerInfo.RectW, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
+                                            <TextBlock
+                                                Grid.Row="3"
+                                                Grid.Column="0"
+                                                Margin="0,0,4,0"
+                                                Text="Rect.Height" />
+                                            <TextBox
+                                                Grid.Row="3"
+                                                Grid.Column="1"
+                                                Text="{Binding MouseCapturerInfo.RectH, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
+                                        </Grid>
+                                    </GroupBox>
+                                    <GroupBox Grid.Column="1" Header="Training">
+                                        <Grid Margin="1">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition />
+                                                <ColumnDefinition />
+                                            </Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition />
+                                                <RowDefinition />
+                                                <RowDefinition />
+                                                <RowDefinition />
+                                            </Grid.RowDefinitions>
+                                            <Button
+                                                Grid.Row="0"
+                                                Grid.Column="0"
+                                                Margin="5,0"
+                                                Command="{Binding BuildYoloConfigCommand}"
+                                                Content="Build Yolov4 Config" />
+                                            <Button
+                                                Grid.Row="0"
+                                                Grid.Column="1"
+                                                Margin="5,0"
+                                                Command="{Binding TrainingCommand}"
+                                                Content="Just Training" />
+                                        </Grid>
+                                    </GroupBox>
                                 </Grid>
                             </StackPanel>
+                        </GroupBox>
+                        <GroupBox Grid.Row="1" Header="Log View">
+                            <TextBox
+                                x:Name="ConsoleView"
+                                Margin="0,1"
+                                Background="Black"
+                                FontSize="12"
+                                Foreground="White"
+                                HorizontalScrollBarVisibility="Auto"
+                                IsReadOnly="True"
+                                Text="{Binding Log}"
+                                TextWrapping="Wrap"
+                                VerticalScrollBarVisibility="Auto" />
                         </GroupBox>
                     </Grid>
                 </TabItem>

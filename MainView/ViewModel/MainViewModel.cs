@@ -7,6 +7,7 @@ using ImageProcessor;
 using MainView.Framework;
 using MainView.Model;
 using MainView.View;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -38,7 +39,12 @@ namespace MainView.ViewModel
         /// <summary>
         /// Process list collection.
         /// </summary>
-        public ObservableCollection<ProcessModel> ProcessInfoes { get; } = new ObservableCollection<ProcessModel>();
+        public ObservableCollection<ProcessModel> ProcessInfoes { get; set; } = new ObservableCollection<ProcessModel>();
+
+        /// <summary>
+        /// Current process list.
+        /// </summary>
+        public List<EnumProcessHelper.ProcessInfo> CurrentProcesses { get; set; }
 
         /// <summary>
         /// Process index.
@@ -86,21 +92,39 @@ namespace MainView.ViewModel
         }
 
         /// <summary>
-        /// The positive samples save folder's path.
+        /// The samples save folder's path.
         /// </summary>
-        public string PositiveSamplesSavePath
+        public string SamplesSavePath
         {
-            get => GetProperty(() => PositiveSamplesSavePath);
-            set => SetProperty(() => PositiveSamplesSavePath, value);
+            get => GetProperty(() => SamplesSavePath);
+            set => SetProperty(() => SamplesSavePath, value);
+        }
+
+        ///// <summary>
+        ///// The negative samples save folder's path.
+        ///// </summary>
+        //public string NegativeSamplesSavePath
+        //{
+        //    get => GetProperty(() => NegativeSamplesSavePath);
+        //    set => SetProperty(() => NegativeSamplesSavePath, value);
+        //}
+
+        /// <summary>
+        /// Log info.
+        /// </summary>
+        public string Log
+        {
+            get => GetProperty(() => Log);
+            set => SetProperty(() => Log, value);
         }
 
         /// <summary>
-        /// The negative samples save folder's path.
+        /// Recorded mouse capturer info.
         /// </summary>
-        public string NegativeSamplesSavePath
+        public MouseCapturerModel MouseCapturerInfo
         {
-            get => GetProperty(() => NegativeSamplesSavePath);
-            set => SetProperty(() => NegativeSamplesSavePath, value);
+            get => GetProperty(() => MouseCapturerInfo);
+            set => SetProperty(() => MouseCapturerInfo, value);
         }
 
         #endregion
@@ -111,11 +135,6 @@ namespace MainView.ViewModel
         /// Save current frame?
         /// </summary>
         private bool _isSaveFrame = false;
-
-        /// <summary>
-        /// Current process list.
-        /// </summary>
-        private static List<EnumProcessHelper.ProcessInfo> _currentProcesses;
 
         /// <summary>
         /// Game.Overlay.Net sticky window.
@@ -145,8 +164,8 @@ namespace MainView.ViewModel
             Task.Run(async () =>
             {
                 // Get process list, maybe longer time.
-                _currentProcesses = GetProcessList();
-                foreach (var p in _currentProcesses)
+                CurrentProcesses = GetProcessList();
+                foreach (var p in CurrentProcesses)
                 {
                     p.ProcessIcon?.Freeze();
                 }
@@ -158,7 +177,7 @@ namespace MainView.ViewModel
                     if (ProcessInfoes.Count > 0)
                         ProcessInfoes.Clear();
                     // Update list.
-                    foreach (var p in _currentProcesses)
+                    foreach (var p in CurrentProcesses)
                     {
                         ProcessInfoes.Add(new ProcessModel
                         {
@@ -270,18 +289,15 @@ namespace MainView.ViewModel
         [AsyncCommand]
         public void MouseCapturerCommand(object sender)
         {
-            var btn = sender as Button;
-            var isP = true;
-            if (btn.Content.ToString() == "Negative Capturer")
-            {
-                isP = false;
-            }
-
             Task.Run(() =>
             {
-                var rnd = new Random();
                 // Init overlay window.
-                var overlayWindow = new OverlayWindow(0, 0, (int)SystemParameters.PrimaryScreenWidth, (int)SystemParameters.PrimaryScreenHeight)
+                var width = MouseCapturerInfo.WinW;
+                var height = MouseCapturerInfo.WinH;
+                var rectWidth = MouseCapturerInfo.RectW;
+                var rectHeight = MouseCapturerInfo.RectH;
+
+                var overlayWindow = new OverlayWindow(0, 0, width, height)
                 {
                     IsTopmost = true,
                     IsVisible = true
@@ -303,61 +319,73 @@ namespace MainView.ViewModel
 
                 GameOverlay.Drawing.SolidBrush greenBrush = gfx.CreateSolidBrush(GameOverlay.Drawing.Color.Green);
                 GameOverlay.Drawing.SolidBrush redBrush = gfx.CreateSolidBrush(GameOverlay.Drawing.Color.Red);
-
-                var width = 200;
-                var height = 300;
+                GameOverlay.Drawing.SolidBrush blueBrush = gfx.CreateSolidBrush(GameOverlay.Drawing.Color.Blue);
 
                 while (true)
                 {
                     var mousePos = GetMousePosition();
-                    //overlayWindow.X = mousePos.X - width / 2;
-                    //overlayWindow.Y = mousePos.Y - height / 2;
+                    overlayWindow.X = mousePos.X - width / 2;
+                    overlayWindow.Y = mousePos.Y - height / 2;
 
-                    gfx.BeginScene();
-                    gfx.ClearScene();
+                    var left = (float)(width - rectWidth) / 2;
+                    var top = (float)(height - rectHeight) / 2;
+                    var right = (float)(width + rectWidth) / 2;
+                    var bottom = (float)(height + rectHeight) / 2;
 
                     Application.Current?.Dispatcher.BeginInvoke(new Action(() =>
                     {
                         // Resize the gfx draw.
-                        if (Keyboard.IsKeyDown(Key.Left))
+                        if (Keyboard.IsKeyDown(Key.A))
                         {
-                            if (width <= 0) width = 0;
-                            else width -= 1;
+                            if (rectWidth <= 0) rectWidth = 0;
+                            else rectWidth -= 1;
                         }
-                        if (Keyboard.IsKeyDown(Key.Right))
+                        if (Keyboard.IsKeyDown(Key.D))
                         {
-                            width += 1;
+                            rectWidth += 1;
                         }
-                        if (Keyboard.IsKeyDown(Key.Up))
+                        if (Keyboard.IsKeyDown(Key.W))
                         {
-                            height += 1;
+                            rectHeight += 1;
                         }
-                        if (Keyboard.IsKeyDown(Key.Down))
+                        if (Keyboard.IsKeyDown(Key.S))
                         {
-                            if (height <= 0) height = 0;
-                            else height -= 1;
+                            if (rectHeight <= 0) rectHeight = 0;
+                            else rectHeight -= 1;
                         }
                     }));
-                    //width = width < 0 ? 0 : width;
-                    //height = height < 0 ? 0 : height;
-                    var left = mousePos.X - width / 2;
-                    var up = mousePos.Y - height / 2;
-
-                    gfx.DrawText(gfx.CreateFont("Arial", 14), redBrush, new GameOverlay.Drawing.Point(left, up - 18),
-                        $"Size: {width}x{height}  Pos:[{left},{up}]");
-                    gfx.DrawRectangle(greenBrush, left, up, left + width, up + height, 2);
-
-                    gfx.EndScene();
 
                     // Save the sample.
                     if (KeyboardInterceptor.IsKeyToggled(KeyboardInterceptor.Keys.Home))
                     {
-                        var path = isP == true ? PositiveSamplesSavePath : NegativeSamplesSavePath;
+                        // Clear scene.
+                        gfx.BeginScene();
+                        gfx.ClearScene();
+                        gfx.EndScene();
 
+                        var path = SamplesSavePath;
+                        // Save the png.
                         var i = Directory.GetFiles(path, "*.png", SearchOption.AllDirectories).Length;
                         var fileName = $"{i}.png";
-                        CaptureScreen(width - 4, height - 4, left + 2, up + 2).Save($"{path}{fileName}", ImageFormat.Png);
+                        CaptureScreen(width, height, overlayWindow.X, overlayWindow.Y).Save($"{path}{fileName}", ImageFormat.Png);
                         Console.Beep();
+                        // Save to yolo txt.
+                        var relativeCenterX = (float)(left + rectWidth / 2) / width;
+                        var relativeCenterY = (float)(top + rectHeight / 2) / height;
+                        var relativeWidth = (float)rectWidth / width;
+                        var relativeHeight = (float)rectHeight / height;
+                        var txt = string.Format("{0} {1} {2} {3} {4}", 0, relativeCenterX, relativeCenterY, relativeWidth, relativeHeight).Replace(",", ".");
+                        File.WriteAllText($"{path}{i}.txt", txt);
+                        // Save the setting.
+                        MouseCapturerInfo.WinW = width;
+                        MouseCapturerInfo.WinH = height;
+                        MouseCapturerInfo.RectW = rectWidth;
+                        MouseCapturerInfo.RectH = rectHeight;
+                        // Update the MouseCapturerSetting.json.
+                        var newJson = JsonConvert.SerializeObject(MouseCapturerInfo, Formatting.Indented);
+                        File.WriteAllText("MouseCapturerSetting.json", newJson, System.Text.Encoding.Default);
+
+                        continue;
                     }
                     // Exit.
                     if (KeyboardInterceptor.IsKeyToggled(KeyboardInterceptor.Keys.Escape))
@@ -370,6 +398,19 @@ namespace MainView.ViewModel
                         overlayWindow.Dispose();
                         break;
                     }
+
+                    gfx.BeginScene();
+                    gfx.ClearScene();
+
+                    // Draw overlay window and info text.
+                    gfx.DrawText(gfx.CreateFont("Arial", 14), redBrush, new GameOverlay.Drawing.Point(1, 1),
+                        $"Size: {rectWidth}x{rectHeight}  Pos:[{overlayWindow.X},{overlayWindow.Y}]");
+                    gfx.DrawRectangle(greenBrush, 0, 0, width, height, 2);
+
+                    // Draw rect box.
+                    gfx.DrawRectangle(blueBrush, left, top, right, bottom, 2);
+
+                    gfx.EndScene();
                 }
             });
         }
@@ -377,36 +418,113 @@ namespace MainView.ViewModel
         [AsyncCommand]
         public void AddSamplesCommand(object e)
         {
-            var path = e as string;
-            var isP = true;
-            if (path == NegativeSamplesSavePath)
+            //var path = e as string;
+            //var isP = true;
+            //if (path == NegativeSamplesSavePath)
+            //{
+            //    isP = false;
+            //}
+
+            //Microsoft.Win32.OpenFileDialog fileDialog = new Microsoft.Win32.OpenFileDialog
+            //{
+            //    Multiselect = true,
+            //    Filter = "All Image Files | *.*",
+            //    Title = "Please select image."
+            //};
+
+            //if ((bool)fileDialog.ShowDialog())
+            //{
+            //    var arrPaths = fileDialog.FileNames;
+
+            //    if (arrPaths.Length > 0)
+            //    {
+            //        // Save where.
+            //        var targetPath = isP == true ? PositiveSamplesSavePath : NegativeSamplesSavePath;
+            //        // Copy files to target folder.
+            //        foreach (var img in arrPaths)
+            //        {
+            //            File.Copy(img, $"{targetPath}{Path.GetFileName(img)}", true);
+            //        }
+            //    }
+            //}
+        }
+
+        [AsyncCommand]
+        public void BuildYoloConfigCommand()
+        {
+            var darknetPath = GLOBALS.DARKNET_PATH;
+            var darknetDataPath = darknetPath + "data\\";
+            var yoloProjectsPath = darknetPath + "projects\\";
+            var yolov4DefPath = darknetPath + "yolov4def\\";
+            var projectName = CurrentProcesses[ProcessIndex].ProcessName;
+            var projcetPath = yoloProjectsPath + projectName + "\\";
+            // Check and create project directory.
+            if (!Directory.Exists(yoloProjectsPath))
             {
-                isP = false;
+                Directory.CreateDirectory(yoloProjectsPath);
+            }
+            if (!Directory.Exists(projcetPath))
+            {
+                Directory.CreateDirectory(projcetPath);
+            }
+            if (!Directory.Exists(SamplesSavePath))
+            {
+                Directory.CreateDirectory(SamplesSavePath);
             }
 
-            Microsoft.Win32.OpenFileDialog fileDialog = new Microsoft.Win32.OpenFileDialog
-            {
-                Multiselect = true,
-                Filter = "All Image Files | *.*",
-                Title = "Please select image."
-            };
+            // Build config.
+            File.Copy(yolov4DefPath + "default.cmd", $"{projcetPath + projectName}.cmd", true);
+            File.Copy(yolov4DefPath + "default_trainmore.cmd", $"{projcetPath + projectName}_trainmore.cmd", true);
+            File.Copy(yolov4DefPath + "yolov4-tiny.cfg", $"{projcetPath + projectName}.cfg", true);
+            File.Copy(yolov4DefPath + "yolov4-tiny.conv.29", $"{projcetPath + projectName}.conv.29", true);
 
-            if ((bool)fileDialog.ShowDialog())
-            {
-                var arrPaths = fileDialog.FileNames;
+            File.Copy(yolov4DefPath + "default.data", $"{darknetDataPath + projectName}.data", true);
+            File.Copy(yolov4DefPath + "default.names", $"{darknetDataPath + projectName}.names", true);
+            File.Copy(yolov4DefPath + "default.txt", $"{darknetDataPath + projectName}.txt", true);
+        }
 
-                if (arrPaths.Length > 0)
-                {
-                    // Save where.
-                    var targetPath = isP == true ? PositiveSamplesSavePath : NegativeSamplesSavePath;
-                    // Check the count of original files.
-                    // Copy files to target folder.
-                    foreach (var img in arrPaths)
-                    {
-                        File.Copy(img, $"{targetPath}{Path.GetFileName(img)}", true);
-                    }
-                }
+        [AsyncCommand]
+        public void TrainingCommand()
+        {
+            // Build yolov4 project.
+            var darknetPath = GLOBALS.DARKNET_PATH;
+            var darknetDataPath = darknetPath + "data\\";
+            var yoloProjectsPath = darknetPath + "projects\\";
+            var projectName = CurrentProcesses[ProcessIndex].ProcessName;
+            var projcetPath = yoloProjectsPath + projectName + "\\";
+
+            var objectNum = 1;
+            // Change default yolov4 config.
+            File.WriteAllText($"{projcetPath + projectName}.cfg",
+                File.ReadAllText($"{projcetPath + projectName}.cfg")
+                .Replace("OBJ_NUMBER", objectNum.ToString())
+                .Replace("FILTER_NUMBER", ((objectNum + 5) * 3).ToString()));
+            File.WriteAllText($"{projcetPath + projectName}.cfg",
+                File.ReadAllText($"{projcetPath + projectName}.cfg")
+                .Replace("batch=1", "batch=64")
+                .Replace("subdivisions=1", "subdivisions=8"));
+            // Change default yolov4 .data file.
+            File.WriteAllText($"{darknetDataPath + projectName}.data",
+                File.ReadAllText($"{darknetDataPath + projectName}.data")
+                .Replace("OBJ_NUMBER", objectNum.ToString())
+                .Replace("PROJECT_NAME", projectName));
+            // Change default darknet command.
+            File.WriteAllText($"{projcetPath + projectName}.cmd",
+                File.ReadAllText($"{projcetPath + projectName}.cmd")
+                .Replace("PROJECT_NAME", projectName));
+            File.WriteAllText($"{projcetPath + projectName}_trainmore.cmd",
+                File.ReadAllText($"{projcetPath + projectName}_trainmore.cmd")
+                .Replace("PROJECT_NAME", projectName));
+            // Add object to .names file.
+            File.WriteAllText($"{darknetDataPath + projectName}.names", "0");
+            // Add samples path to project txt.
+            FileInfo[] files = new DirectoryInfo(SamplesSavePath).GetFiles("*.png");
+            string imagesPath = string.Empty;
+            foreach (var file in files)
+            {
+                imagesPath += $"projects/{projectName}/img/{file.Name}\r\n";
             }
+            File.WriteAllText($"{darknetDataPath + projectName}.txt", imagesPath);
         }
 
         #endregion
@@ -419,11 +537,11 @@ namespace MainView.ViewModel
         private void Initialize()
         {
             // Get process list.
-            _currentProcesses = GetProcessList();
+            CurrentProcesses = GetProcessList();
             // Clear list.
             if (ProcessInfoes.Count > 0)
                 ProcessInfoes.Clear();
-            foreach (var p in _currentProcesses)
+            foreach (var p in CurrentProcesses)
             {
                 ProcessInfoes.Add(new ProcessModel
                 {
@@ -435,16 +553,10 @@ namespace MainView.ViewModel
                 });
             }
             // Initialize var.
-            PositiveSamplesSavePath = GLOBALS.SAMPLES_FOLDER_PATH + "Positive\\";
-            if (!Directory.Exists(PositiveSamplesSavePath))
-            {
-                Directory.CreateDirectory(PositiveSamplesSavePath);
-            }
-            NegativeSamplesSavePath = GLOBALS.SAMPLES_FOLDER_PATH + "Negative\\";
-            if (!Directory.Exists(NegativeSamplesSavePath))
-            {
-                Directory.CreateDirectory(NegativeSamplesSavePath);
-            }
+            SamplesSavePath = GLOBALS.DARKNET_PATH + "projects\\" + CurrentProcesses[ProcessIndex].ProcessName + "\\img\\";
+            // Load MouseCapturerSetting.json. Get mouse capturer setting info.
+            var json = File.ReadAllText("MouseCapturerSetting.json", System.Text.Encoding.Default);
+            MouseCapturerInfo = JsonConvert.DeserializeObject<MouseCapturerModel>(json, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
         }
 
         /// <summary>

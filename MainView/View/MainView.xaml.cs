@@ -66,5 +66,13 @@ namespace MainView
             //var viewModel = MainVM;
             //viewModel.Capturer = capturer;
         }
+
+        private void ComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            if (MainVM.ProcessInfoes.Count > 0 && MainVM.CurrentProcesses != null && MainVM.CurrentProcesses.Count > 0)
+            {
+                MainVM.SamplesSavePath = GLOBALS.DARKNET_PATH + "projects\\" + MainVM.CurrentProcesses[MainVM.ProcessIndex].ProcessName + "\\img\\";
+            }
+        }
     }
 }
