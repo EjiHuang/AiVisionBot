@@ -13,6 +13,7 @@
     Height="500"
     Closing="Window_Closing"
     Loaded="Windows9xClassicWindow_Loaded"
+    WindowStartupLocation="CenterScreen"
     mc:Ignorable="d">
     <win9x:Windows9xClassicWindow.DataContext>
         <vm:MainViewModel x:Name="MainVM" />
@@ -300,6 +301,12 @@
                                                 Margin="5,0"
                                                 Command="{Binding TrainingCommand}"
                                                 Content="Just Training" />
+                                            <Button
+                                                Grid.Row="01"
+                                                Grid.Column="1"
+                                                Margin="5,0"
+                                                Command="{Binding StopTrainingCommand}"
+                                                Content="Stop Training" />
                                         </Grid>
                                     </GroupBox>
                                 </Grid>
@@ -315,6 +322,7 @@
                                 HorizontalScrollBarVisibility="Auto"
                                 IsReadOnly="True"
                                 Text="{Binding Log}"
+                                TextChanged="ConsoleView_TextChanged"
                                 TextWrapping="Wrap"
                                 VerticalScrollBarVisibility="Auto" />
                         </GroupBox>

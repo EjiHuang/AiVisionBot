@@ -74,5 +74,11 @@ namespace MainView
                 MainVM.SamplesSavePath = GLOBALS.DARKNET_PATH + "projects\\" + MainVM.CurrentProcesses[MainVM.ProcessIndex].ProcessName + "\\img\\";
             }
         }
+
+        private void ConsoleView_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+        {
+            ConsoleView.SelectionStart = ConsoleView.Text.Length;
+            ConsoleView.ScrollToEnd();
+        }
     }
 }

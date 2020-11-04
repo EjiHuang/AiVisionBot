@@ -146,6 +146,11 @@ namespace MainView.ViewModel
         /// </summary>
         private GameOverlay.Drawing.Graphics _gfx;
 
+        /// <summary>
+        /// Cmd process.
+        /// </summary>
+        private Process proc;
+
         #endregion
 
         #region public methods
@@ -484,7 +489,7 @@ namespace MainView.ViewModel
         }
 
         [AsyncCommand]
-        public void TrainingCommand()
+        public async void TrainingCommand()
         {
             // Build yolov4 project.
             var darknetPath = GLOBALS.DARKNET_PATH;
@@ -525,6 +530,25 @@ namespace MainView.ViewModel
                 imagesPath += $"projects/{projectName}/img/{file.Name}\r\n";
             }
             File.WriteAllText($"{darknetDataPath + projectName}.txt", imagesPath);
+
+            // Check old weight is existed?
+            if (File.Exists($"projects/{projectName}/{projectName}.weights"))
+            {
+                Process.Start("cmd", @"/C cd " + $"{darknetPath} & ./projects/{projectName}/{projectName}_trainmore.cmd");
+            }
+            else
+                await ExecuteCmd(@$"cd {darknetPath} & {projcetPath}{projectName}.cmd");
+        }
+
+        [AsyncCommand]
+        public void StopTrainingCommand()
+        {
+            proc.Kill();
+            foreach (var p in Process.GetProcessesByName("darknet"))
+            {
+                p.Kill();
+            }
+            Log += "Current command is stopped." + Environment.NewLine;
         }
 
         #endregion
@@ -536,6 +560,8 @@ namespace MainView.ViewModel
         /// </summary>
         private void Initialize()
         {
+            // Show log.
+            Log = "AI Vision Bot v0.0.1" + Environment.NewLine;
             // Get process list.
             CurrentProcesses = GetProcessList();
             // Clear list.
@@ -771,6 +797,44 @@ namespace MainView.ViewModel
         /// Stop capture.
         /// </summary>
         private void StopCapture() => Capturer?.StopCapture();
+
+        /// <summary>
+        /// Use cmd.exe.
+        /// </summary>
+        /// <param name="command"></param>
+        public async Task ExecuteCmd(string command)
+        {
+            Log += command + Environment.NewLine;
+            await Task.Run(() =>
+            {
+                ProcessStartInfo CmdProcessInfo = new ProcessStartInfo()
+                {
+                    FileName = "cmd",
+                    Arguments = "/c " + command,
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    CreateNoWindow = true,
+                    WindowStyle = ProcessWindowStyle.Hidden
+                };
+                proc = new Process() { StartInfo = CmdProcessInfo };
+                proc.StartInfo.RedirectStandardError = true;
+                proc.Start();
+                proc.BeginOutputReadLine();
+                proc.BeginErrorReadLine();
+                proc.OutputDataReceived += (sender, e) => 
+                { 
+                    Log += e.Data + Environment.NewLine;
+                    if (null == e.Data) Log += "Finished." + Environment.NewLine;
+                };
+                proc.ErrorDataReceived += (sender, e) =>
+                {
+                    if (null != e.Data)
+                    {
+                        Log += e.Data + Environment.NewLine;
+                    }
+                };
+            });
+        }
 
         #endregion
 
