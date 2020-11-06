@@ -15,6 +15,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows;
@@ -150,6 +151,11 @@ namespace MainView.ViewModel
         /// Cmd process.
         /// </summary>
         private Process proc;
+
+        /// <summary>
+        /// The wrapper of yolo.
+        /// </summary>
+        private YoloWrapper.YoloWrapperNoGpu yoloWrapper;
 
         #endregion
 
@@ -551,6 +557,31 @@ namespace MainView.ViewModel
             Log += "Current command is stopped." + Environment.NewLine;
         }
 
+        [AsyncCommand]
+        public void TestCommand()
+        {
+            var darknetPath = GLOBALS.DARKNET_PATH;
+            var darknetDataPath = darknetPath + "data\\";
+            var yoloProjectsPath = darknetPath + "projects\\";
+            var projectName = CurrentProcesses[ProcessIndex].ProcessName;
+            var projcetPath = yoloProjectsPath + projectName + "\\";
+            // Initialize yolo wrapper.
+            yoloWrapper = new YoloWrapper.YoloWrapperNoGpu($@".\darknet\projects\{projectName}\trainfiles\yolov4-tiny.cfg",
+                $@".\darknet\projects\{projectName}\trainfiles\{projectName}.weights", 0);
+            var bbox = yoloWrapper.Detect(@"dog.jpg");
+
+            Log += "Result: " + Environment.NewLine;
+            var table = new ConsoleTables.ConsoleTable("Type", "Confidence", "X", "Y", "Width", "Height");
+            foreach (var item in bbox.Where(o => o.h > 0 || o.w > 0))
+            {
+                // var type = _namesDic[(int)item.obj_id];
+                var type = item.obj_id;
+                table.AddRow(type, item.prob, item.x, item.y, item.w, item.h);
+            }
+            //table.Write(ConsoleTables.Format.MarkDown);
+            Log += table.ToString() + Environment.NewLine;
+        }
+
         #endregion
 
         #region private methods
@@ -821,8 +852,8 @@ namespace MainView.ViewModel
                 proc.Start();
                 proc.BeginOutputReadLine();
                 proc.BeginErrorReadLine();
-                proc.OutputDataReceived += (sender, e) => 
-                { 
+                proc.OutputDataReceived += (sender, e) =>
+                {
                     Log += e.Data + Environment.NewLine;
                     if (null == e.Data) Log += "Finished." + Environment.NewLine;
                 };

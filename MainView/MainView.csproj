@@ -18,6 +18,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="ConsoleTables" Version="2.4.2" />
     <PackageReference Include="DevExpressMvvm" Version="20.1.6" />
     <PackageReference Include="GameOverlay.Net" Version="4.3.0" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
@@ -30,6 +31,7 @@
     <ProjectReference Include="..\Composition.WindowsRuntimeHelpers\Composition.WindowsRuntimeHelpers.csproj" />
     <ProjectReference Include="..\ImageProcessor\ImageProcessor.csproj" />
     <ProjectReference Include="..\Windows9xClassic\Windows9xClassic.csproj" />
+    <ProjectReference Include="..\YoloWrapper\YoloWrapper.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -184,7 +184,7 @@
                             Unloaded="CompositionHost_Unloaded" />
                     </Grid>
                 </TabItem>
-                <TabItem x:Name="TabItem_SampleCollector" Header="Sample Collector">
+                <TabItem x:Name="TabItem_SampleCollector" Header="Yolov4">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="auto " />
@@ -295,18 +295,28 @@
                                                 Margin="5,0"
                                                 Command="{Binding BuildYoloConfigCommand}"
                                                 Content="Build Yolov4 Config" />
+                                            <Grid Grid.Row="0" Grid.Column="1">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition />
+                                                    <ColumnDefinition />
+                                                </Grid.ColumnDefinitions>
+                                                <Button
+                                                    Grid.Column="0"
+                                                    Margin="5,0"
+                                                    Command="{Binding TrainingCommand}"
+                                                    Content="Start Training" />
+                                                <Button
+                                                    Grid.Column="1"
+                                                    Margin="5,0"
+                                                    Command="{Binding StopTrainingCommand}"
+                                                    Content="Stop Training" />
+                                            </Grid>
+
                                             <Button
-                                                Grid.Row="0"
+                                                Grid.Row="3"
                                                 Grid.Column="1"
-                                                Margin="5,0"
-                                                Command="{Binding TrainingCommand}"
-                                                Content="Just Training" />
-                                            <Button
-                                                Grid.Row="01"
-                                                Grid.Column="1"
-                                                Margin="5,0"
-                                                Command="{Binding StopTrainingCommand}"
-                                                Content="Stop Training" />
+                                                Command="{Binding TestCommand}"
+                                                Content="Test Weights" />
                                         </Grid>
                                     </GroupBox>
                                 </Grid>

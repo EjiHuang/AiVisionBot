@@ -11,7 +11,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Windows9xClassic", "Windows
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MainView", "MainView\MainView.csproj", "{8A703614-6E15-4245-A30A-B8E759C84FDF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ImageProcessor", "ImageProcessor\ImageProcessor.csproj", "{4FE76B70-B7E1-4A95-8C1B-8FBEB435AF9C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ImageProcessor", "ImageProcessor\ImageProcessor.csproj", "{4FE76B70-B7E1-4A95-8C1B-8FBEB435AF9C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YoloWrapper", "YoloWrapper\YoloWrapper.csproj", "{BF267AAB-C67A-4E92-8894-CD79157E9918}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,6 +41,10 @@ Global
 		{4FE76B70-B7E1-4A95-8C1B-8FBEB435AF9C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4FE76B70-B7E1-4A95-8C1B-8FBEB435AF9C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4FE76B70-B7E1-4A95-8C1B-8FBEB435AF9C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BF267AAB-C67A-4E92-8894-CD79157E9918}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BF267AAB-C67A-4E92-8894-CD79157E9918}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BF267AAB-C67A-4E92-8894-CD79157E9918}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BF267AAB-C67A-4E92-8894-CD79157E9918}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
